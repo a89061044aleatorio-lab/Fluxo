@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo — controle financeiro</title>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#20241F">
+<meta property="og:title" content="Fluxo — controle financeiro pessoal">
+<meta property="og:image" content="cover.png">
+<meta property="og:description" content="Registre entradas, saídas, contas fixas, orçamento e metas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F6F3EC;
+    --paper-raised: #FFFFFF;
+    --ink: #20241F;
+    --ink-soft: #5B5A50;
+    --ink-faint: #8B8677;
+    --line: #E2DDCC;
+    --green: #3F6B4F;
+    --green-bg: #E6EDE4;
+    --clay: #A34A3D;
+    --clay-bg: #F3E3DF;
+    --amber: #B07B22;
+    --amber-bg: #F4E9D6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  .masthead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .masthead .name { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .masthead .date { font-size: 12px; color: var(--ink-faint); }
+
+  .tabbar { display: flex; gap: 6px; margin-bottom: 22px; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .tab-btn { flex: 1; padding: 8px 4px; border: none; border-radius: 7px; background: transparent; color: var(--ink-soft); font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; }
+  .tab-btn.active { background: var(--ink); color: var(--paper); }
+
+  .hero { padding: 6px 0 22px; border-bottom: 1px solid var(--line); }
+  .hero .label { font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; }
+  .hero .amount { font-family: 'Fraunces', serif; font-size: 40px; font-weight: 500; letter-spacing: -0.015em; line-height: 1; }
+  .hero .amount.neg { color: var(--clay); }
+
+  .stats { display: flex; gap: 10px; margin-top: 16px; }
+  .stat { flex: 1; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .stat .k { font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .stat .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat.in .v { color: var(--green); }
+  .stat.out .v { color: var(--clay); }
+
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 14px; }
+  .month-nav button { border: 1px solid var(--line); background: var(--paper-raised); border-radius: 8px; width: 34px; height: 34px; font-size: 16px; color: var(--ink); cursor: pointer; }
+  .month-nav .label { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; }
+
+  section { margin-top: 26px; }
+  h2 { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 500; margin: 0 0 12px; }
+  h3 { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; margin: 0 0 4px; }
+
+  .card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .toggle button {
+    flex: 1; padding: 9px 0; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--paper); color: var(--ink-soft); font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .toggle button.active.in { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .toggle button.active.out { background: var(--clay-bg); border-color: var(--clay); color: var(--clay); }
+
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  input, select {
+    width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--paper); font-family: 'Inter', sans-serif; font-size: 14px; color: var(--ink);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--ink-faint); }
+  .field-label { font-size: 11px; color: var(--ink-faint); margin: 0 0 3px 2px; display: block; }
+
+  .btn {
+    width: 100%; margin-top: 4px; padding: 11px 0; border: none; border-radius: 8px;
+    background: var(--ink); color: var(--paper); font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .btn:active { opacity: 0.85; }
+  .btn-outline { background: var(--paper); color: var(--ink); border: 1px solid var(--line); }
+  .err { font-size: 12px; color: var(--clay); margin: 6px 2px 0; display: none; }
+
+  .list { display: flex; flex-direction: column; gap: 1px; background: var(--line); border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+  .item { display: flex; align-items: center; justify-content: space-between; background: var(--paper-raised); padding: 12px 14px; gap: 10px; }
+  .item .left { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .item .desc { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .meta { font-size: 12px; color: var(--ink-faint); }
+  .item .right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .item .val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .item .val.in { color: var(--green); }
+  .item .val.out { color: var(--clay); }
+  .item .del { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px; }
+
+  .empty { text-align: center; padding: 30px 10px; color: var(--ink-faint); font-size: 13px; }
+
+  .cat-bar { margin-bottom: 14px; }
+  .cat-bar .top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .cat-bar .top .name { color: var(--ink); }
+  .cat-bar .top .amt { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .cat-bar .track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .cat-bar .fill { height: 100%; border-radius: 3px; }
+  .cat-bar .fill.ok { background: var(--green); }
+  .cat-bar .fill.warn { background: var(--amber); }
+  .cat-bar .fill.over { background: var(--clay); }
+  .cat-bar .note { font-size: 11px; margin-top: 3px; }
+  .cat-bar .note.ok { color: var(--green); }
+  .cat-bar .note.warn { color: var(--amber); }
+  .cat-bar .note.over { color: var(--clay); }
+
+  .goal-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .goal-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .goal-top .nome { font-family: 'Fraunces', serif; font-size: 15px; }
+  .goal-top .pct { font-size: 12px; color: var(--ink-soft); }
+  .goal-track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .goal-fill { height: 100%; background: var(--green); border-radius: 4px; }
+  .goal-amounts { font-size: 12px; color: var(--ink-soft); display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .goal-add { display: flex; gap: 6px; }
+  .goal-add input { flex: 1; }
+  .goal-add button { width: auto; padding: 0 14px; margin: 0; }
+  .goal-del { background: none; border: none; color: var(--ink-faint); font-size: 12px; cursor: pointer; padding: 0; margin-top: 6px; }
+
+  .empty-tab { text-align: center; padding: 40px 16px; color: var(--ink-faint); font-size: 13px; }
+  .search-input { margin-bottom: 12px; }
+  .loading { text-align: center; padding: 40px 0; color: var(--ink-faint); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">Carregando...</div>
+</div>
+
+<script>
+window.onerror = function(msg) {
+  const app = document.getElementById('app');
+  if (app) {
+    app.insertAdjacentHTML('afterbegin', '<div style="background:#F3E3DF;color:#A34A3D;padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:16px;">Erro: ' + msg + '</div>');
+  }
+};
+
+const CATEGORIES = ['Alimentação','Transporte','Moradia','Lazer','Saúde','Educação','Compras','Contas','Salário','Outros'];
+const EXPENSE_CATEGORIES = CATEGORIES.filter(c => c !== 'Salário');
+
+let state = { txns: [], recorrentes: [], orcamentos: {}, metas: [] };
+let tab = 'visao';
+let tipoAtual = 'saida';
+let tipoAtualFixo = 'saida';
+let mesAtual = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
+let busca = '';
+
+function parseValor(str) {
+  str = (str || '').trim();
+  if (!str) return NaN;
+  if (str.includes(',')) str = str.replace(/\./g, '').replace(',', '.');
+  return parseFloat(str);
+}
+function fmt(n) { return (n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function fmtDate(iso) {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function ymPrefix(ano, mes) { return ano + '-' + pad2(mes + 1); }
+function diasNoMes(ano, mes) { return new Date(ano, mes + 1, 0).getDate(); }
+function nomeMes(ano, mes) {
+  const s = new Date(ano, mes, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+async function loadAll() {
+  try {
+    if (window.storage) {
+      const res = await window.storage.get('fluxo_dados', false);
+      if (res) state = JSON.parse(res.value);
+    } else {
+      const raw = localStorage.getItem('fluxo_dados');
+      if (raw) state = JSON.parse(raw);
+    }
+  } catch (e) { /* mantém estado padrão */ }
+  if (!state.txns) state.txns = [];
+  if (!state.recorrentes) state.recorrentes = [];
+  if (!state.orcamentos) state.orcamentos = {};
+  if (!state.metas) state.metas = [];
+  gerarRecorrentesDoMes();
+  await saveAll();
+  render();
+}
+
+async function saveAll() {
+  try {
+    const data = JSON.stringify(state);
+    if (window.storage) await window.storage.set('fluxo_dados', data, false);
+    else localStorage.setItem('fluxo_dados', data);
+  } catch (e) { console.error('Falha ao salvar', e); }
+}
+
+function gerarRecorrentesDoMes() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear(), mes = hoje.getMonth();
+  const prefix = ymPrefix(ano, mes);
+  state.recorrentes.forEach(r => {
+    const jaExiste = state.txns.some(t => t.recorrenteId === r.id && t.data.startsWith(prefix));
+    if (!jaExiste) {
+      const dia = Math.min(r.dia, diasNoMes(ano, mes));
+      state.txns.push({
+        id: 'rec_' + r.id + '_' + prefix,
+        tipo: r.tipo,
+        valor: r.valor,
+        descricao: r.descricao,
+        categoria: r.categoria,
+        data: prefix + '-' + pad2(dia),
+        recorrenteId: r.id
+      });
+    }
+  });
+}
+
+function txnsDoMes(ano, mes) {
+  const prefix = ymPrefix(ano, mes);
+  return state.txns.filter(t => t.data.startsWith(prefix));
+}
+
+function bindValorPreview(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  if (!input || !preview) return;
+  input.oninput = () => {
+    const v = parseValor(input.value);
+    if (input.value.trim() === '') preview.innerHTML = '&nbsp;';
+    else if (isNaN(v)) preview.textContent = 'não reconheci esse valor';
+    else preview.textContent = '= ' + fmt(v);
+  };
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  app.innerHTML = `
+    <div class="masthead">
+      <span class="name">Fluxo</span>
+      <span class="date">${hoje}</span>
+    </div>
+    <div class="tabbar">
+      <button class="tab-btn ${tab === 'visao' ? 'active' : ''}" data-tab="visao">Visão geral</button>
+      <button class="tab-btn ${tab === 'fixos' ? 'active' : ''}" data-tab="fixos">Fixos</button>
+      <button class="tab-btn ${tab === 'orcamento' ? 'active' : ''}" data-tab="orcamento">Orçamento</button>
+      <button class="tab-btn ${tab === 'metas' ? 'active' : ''}" data-tab="metas">Metas</button>
+    </div>
+    <div id="tab-content"></div>
+  `;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.onclick = () => { tab = b.dataset.tab; render(); };
+  });
+  const content = document.getElementById('tab-content');
+  if (tab === 'visao') renderVisaoGeral(content);
+  else if (tab === 'fixos') renderFixos(content);
+  else if (tab === 'orcamento') renderOrcamento(content);
+  else if (tab === 'metas') renderMetas(content);
+}
+
+function renderVisaoGeral(content) {
+  const saldoTotal = state.txns.reduce((s, t) => s + (t.tipo === 'entrada' ? t.valor : -t.valor), 0);
+  const doMes = txnsDoMes(mesAtual.ano, mesAtual.mes);
+  const entradasMes = doMes.filter(t => t.tipo === 'entrada').reduce((s, t) => s + t.valor, 0);
+  const saidasMes = doMes.filter(t => t.tipo === 'saida').reduce((s, t) => s + t.valor, 0);
+
+  const catTotals = {};
+  doMes.filter(t => t.tipo === 'saida').forEach(t => { catTotals[t.categoria] = (catTotals[t.categoria] || 0) + t.valor; });
+  const catList = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  const maxCat = catList.length ? catList[0][1] : 1;
+
+  let listaFiltrada = [...doMes].sort((a, b) => (b.data + b.id) > (a.data + a.id) ? 1 : -1);
+  if (busca.trim()) {
+    const q = busca.trim().toLowerCase();
+    listaFiltrada = listaFiltrada.filter(t => (t.descricao || '').toLowerCase().includes(q) || t.categoria.toLowerCase().includes(q));
+  }
+
+  content.innerHTML = `
+    <div class="hero">
+      <p class="label">Saldo total</p>
+      <div class="amount ${saldoTotal < 0 ? 'neg' : ''}">${fmt(saldoTotal)}</div>
+      <div class="stats">
+        <div class="stat in"><div class="k">Entradas do mês</div><div class="v">${fmt(entradasMes)}</div></div>
+        <div class="stat out"><div class="k">Saídas do mês</div><div class="v">${fmt(saidasMes)}</div></div>
+      </div>
+    </div>
+
+    <section>
+      <h2>Novo lançamento</h2>
+      <div class="card">
+        <div class="toggle">
+          <button type="button" id="btn-saida" class="${tipoAtual === 'saida' ? 'active out' : ''}">Saída</button>
+          <button type="button" id="btn-entrada" class="${tipoAtual === 'entrada' ? 'active in' : ''}">Entrada</button>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Valor</span>
+            <input type="text" id="in-valor" placeholder="0,00" inputmode="decimal">
+            <span id="valor-preview" style="font-size:11px;color:var(--ink-faint);display:block;margin-top:3px;">&nbsp;</span>
+          </div>
+          <div style="flex:1">
+            <span class="field-label">Data</span>
+            <input type="date" id="in-data">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Descrição</span>
+            <input type="text" id="in-desc" placeholder="Ex: mercado, salário...">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Categoria</span>
+            <select id="in-cat">${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+          </div>
+        </div>
+        <p class="err" id="form-err"></p>
+        <button type="button" id="btn-add" class="btn">Adicionar lançamento</button>
+      </div>
+    </section>
+
+    <div class="month-nav">
+      <button type="button" id="mes-prev">‹</button>
+      <span class="label">${nomeMes(mesAtual.ano, mesAtual.mes)}</span>
+      <button type="button" id="mes-next">›</button>
+    </div>
+
+    ${catList.length ? `
+    <section>
+      <h2>No que você gastou</h2>
+      ${catList.map(([cat, val]) => {
+        const limite = state.orcamentos[cat];
+        let cls = 'ok', nota = '';
+        if (limite) {
+          const pct = (val / limite) * 100;
+          cls = pct > 100 ? 'over' : pct >= 70 ? 'warn' : 'ok';
+          nota = `<div class="note ${cls}">${pct.toFixed(0)}% do limite de ${fmt(limite)}</div>`;
+        }
+        return `
+        <div class="cat-bar">
+          <div class="top"><span class="name">${cat}</span><span class="amt">${fmt(val)}</span></div>
+          <div class="track"><div class="fill ${cls}" style="width:${Math.min(100, (val / maxCat * 100)).toFixed(0)}%"></div></div>
+          ${nota}
+        </div>`;
+      }).join('')}
+    </section>` : ''}
+
+    <section>
+      <h2>Lançamentos do mês</h2>
+      <input class="search-input" type="text" id="in-busca" placeholder="Buscar por descrição ou categoria" value="${busca}">
+      ${listaFiltrada.length === 0 ? `<div class="empty">Nenhum lançamento encontrado.</div>` : `
+      <div class="list">
+        ${listaFiltrada.map(t => `
+          <div class="item">
+            <div class="left">
+              <span class="desc">${t.descricao || t.categoria}${t.recorrenteId ? ' · fixo' : ''}</span>
+              <span class="meta">${t.categoria} · ${fmtDate(t.data)}</span>
+            </div>
+            <div class="right">
+              <span class="val ${t.tipo === 'entrada' ? 'in' : 'out'}">${t.tipo === 'entrada' ? '+' : '−'} ${fmt(t.valor)}</span>
+              <button class="del" data-id="${t.id}" aria-label="Excluir">✕</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>`}
+    </section>
+
+    <section>
+      <button type="button" id="btn-csv" class="btn btn-outline">Exportar CSV</button>
+    </section>
+  `;
+
+  bindValorPreview('in-valor', 'valor-preview');
+  const dataInput = document.getElementById('in-data');
+  if (!dataInput.value) {
+    const h = new Date();
+    dataInput.value = h.getFullYear() + '-' + pad2(h.getMonth() + 1) + '-' + pad2(h.getDate());
+  }
+
+  document.getElementById('btn-saida').onclick = () => {
+    tipoAtual = 'saida';
+    document.getElementById('btn-saida').className = 'active out';
+    document.getElementById('btn-entrada').className = '';
+  };
+  document.getElementById('btn-entrada').onclick = () => {
+    tipoAtual = 'entrada';
+    document.getElementById('btn-entrada').className = 'active in';
+    document.getElementById('btn-saida').className = '';
+  };
+
+  document.getElementById('btn-add').onclick = async () => {
+    const valorInput = document.getElementById('in-valor');
+    const dataI = document.getElementById('in-data');
+    const descInput = document.getElementById('in-desc');
+    const catInput = document.getElementById('in-cat');
+    const errEl = document.getElementById('form-err');
+    const valor = parseValor(valorInput.value);
+    if (!valor || isNaN(valor) || valor <= 0) {
+      errEl.textContent = 'Informe um valor válido, ex: 50,00.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!dataI.value) {
+      errEl.textContent = 'Informe a data.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+    state.txns.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      tipo: tipoAtual,
+      valor: Math.round(valor * 100) / 100,
+      descricao: descInput.value.trim(),
+      categoria: catInput.value,
+      data: dataI.value
+    });
+    await saveAll();
+    render();
+  };
+
+  document.getElementById('mes-prev').onclick = () => {
+    mesAtual.mes--;
+    if (mesAtual.mes < 0) { mesAtual.mes = 11; mesAtual.ano--; }
+    render();
+  };
+  document.getElementById('mes-next').onclick = () => {
+    mesAtual.mes++;
+    if (mesAtual.mes > 11) { mesAtual.mes = 0; mesAtual.ano++; }
+    render();
+  };
+
+  document.getElementById('in-busca').oninput = (e) => { busca = e.target.value; };
+  document.getElementById('in-busca').onchange = (e) => { busca = e.target.value; render(); };
+
+  document.querySelectorAll('.del').forEach(btn => {
+    btn.onclick = async () => {
+      state.txns = state.txns.filter(t => t.id !== btn.dataset.id);
+      await saveAll();
+      render();
+    };
+  });
+
+  document.getElementById('btn-csv').onclick = () => {
+    const linhas = [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']];
+    [...state.txns].sort((a, b) => a.data < b.data ? -1 : 1).forEach(t => {
+      linhas.push([t.data, t.tipo, t.categoria, (t.descricao || '').replace(/,/g, ';'), t.valor.toFixed(2)]);
+    });
+    const csv = linhas.map(l => l.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'fluxo_lancamentos.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+}
+
+function renderFixos(content) {
+  content.innerHTML = `
+    <section style="margin-top:6px">
+      <h2>Contas fixas mensais</h2>
+      <p style="font-size:13px;color:var(--ink-soft);margin:-6px 0 14px;">Lançadas automaticamente todo mês, sem precisar adicionar de novo.</p>
+      ${state.recorrentes.length === 0 ? `<div class="empty-tab">Nenhuma conta fixa cadastrada ainda.</div>` : `
+      <div class="list">
+        ${state.recorrentes.map(r => `
+          <div class="item">
+            <div class="left">
+              <span class="desc">${r.descricao || r.categoria}</span>
+              <span class="meta">${r.categoria} · todo dia ${r.dia}</span>
+            </div>
+            <div class="right">
+              <span class="val ${r.tipo === 'entrada' ? 'in' : 'out'}">${r.tipo === 'entrada' ? '+' : '−'} ${fmt(r.valor)}</span>
+              <button class="del" data-id="${r.id}" aria-label="Excluir">✕</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>`}
+    </section>
+
+    <section>
+      <h2>Nova conta fixa</h2>
+      <div class="card">
+        <div class="toggle">
+          <button type="button" id="fx-saida" class="${tipoAtualFixo === 'saida' ? 'active out' : ''}">Saída</button>
+          <button type="button" id="fx-entrada" class="${tipoAtualFixo === 'entrada' ? 'active in' : ''}">Entrada</button>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Valor</span>
+            <input type="text" id="fx-valor" placeholder="0,00" inputmode="decimal">
+            <span id="fx-valor-preview" style="font-size:11px;color:var(--ink-faint);display:block;margin-top:3px;">&nbsp;</span>
+          </div>
+          <div style="flex:1">
+            <span class="field-label">Dia do mês</span>
+            <input type="number" id="fx-dia" min="1" max="31" value="${new Date().getDate()}">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Descrição</span>
+            <input type="text" id="fx-desc" placeholder="Ex: aluguel, Netflix, salário...">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Categoria</span>
+            <select id="fx-cat">${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+          </div>
+        </div>
+        <p class="err" id="fx-err"></p>
+        <button type="button" id="fx-add" class="btn">Adicionar conta fixa</button>
+      </div>
+    </section>
+  `;
+
+  bindValorPreview('fx-valor', 'fx-valor-preview');
+
+  document.getElementById('fx-saida').onclick = () => {
+    tipoAtualFixo = 'saida';
+    document.getElementById('fx-saida').className = 'active out';
+    document.getElementById('fx-entrada').className = '';
+  };
+  document.getElementById('fx-entrada').onclick = () => {
+    tipoAtualFixo = 'entrada';
+    document.getElementById('fx-entrada').className = 'active in';
+    document.getElementById('fx-saida').className = '';
+  };
+
+  document.querySelectorAll('#tab-content .del').forEach(btn => {
+    btn.onclick = async () => {
+      state.recorrentes = state.recorrentes.filter(r => r.id !== btn.dataset.id);
+      await saveAll();
+      render();
+    };
+  });
+
+  document.getElementById('fx-add').onclick = async () => {
+    const valorInput = document.getElementById('fx-valor');
+    const diaInput = document.getElementById('fx-dia');
+    const descInput = document.getElementById('fx-desc');
+    const catInput = document.getElementById('fx-cat');
+    const errEl = document.getElementById('fx-err');
+    const valor = parseValor(valorInput.value);
+    const dia = parseInt(diaInput.value, 10);
+    if (!valor || isNaN(valor) || valor <= 0) {
+      errEl.textContent = 'Informe um valor válido, ex: 50,00.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!dia || dia < 1 || dia > 31) {
+      errEl.textContent = 'Informe um dia entre 1 e 31.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+    state.recorrentes.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      tipo: tipoAtualFixo,
+      valor: Math.round(valor * 100) / 100,
+      descricao: descInput.value.trim(),
+      categoria: catInput.value,
+      dia: dia
+    });
+    gerarRecorrentesDoMes();
+    await saveAll();
+    render();
+  };
+}
+
+function renderOrcamento(content) {
+  const doMes = txnsDoMes(mesAtual.ano, mesAtual.mes);
+  const gastoPorCat = {};
+  doMes.filter(t => t.tipo === 'saida').forEach(t => { gastoPorCat[t.categoria] = (gastoPorCat[t.categoria] || 0) + t.valor; });
+
+  content.innerHTML = `
+    <section style="margin-top:6px">
+      <h2>Orçamento por categoria</h2>
+      <p style="font-size:13px;color:var(--ink-soft);margin:-6px 0 14px;">Defina um limite mensal para cada categoria de gasto. Deixe em branco para não acompanhar.</p>
+      <div class="card">
+        ${EXPENSE_CATEGORIES.map(cat => {
+          const gasto = gastoPorCat[cat] || 0;
+          const limite = state.orcamentos[cat];
+          let cls = 'ok', nota = 'sem limite definido';
+          if (limite) {
+            const pct = (gasto / limite) * 100;
+            cls = pct > 100 ? 'over' : pct >= 70 ? 'warn' : 'ok';
+            nota = `${fmt(gasto)} de ${fmt(limite)} (${pct.toFixed(0)}%)`;
+          } else if (gasto > 0) {
+            nota = `${fmt(gasto)} gastos neste mês`;
+          }
+          return `
+          <div class="cat-bar">
+            <div class="top"><span class="name">${cat}</span></div>
+            ${limite ? `<div class="track"><div class="fill ${cls}" style="width:${Math.min(100, (gasto / limite * 100)).toFixed(0)}%"></div></div>` : ''}
+            <div class="note ${limite ? cls : ''}" style="margin-top:${limite ? '3px' : '2px'}">${nota}</div>
+            <input type="text" class="orc-input" data-cat="${cat}" inputmode="decimal" placeholder="limite mensal, ex: 400" value="${limite ? String(limite).replace('.', ',') : ''}" style="margin-top:8px">
+          </div>`;
+        }).join('')}
+      </div>
+    </section>
+  `;
+
+  document.querySelectorAll('.orc-input').forEach(inp => {
+    inp.onchange = async () => {
+      const cat = inp.dataset.cat;
+      const v = parseValor(inp.value);
+      if (inp.value.trim() === '') delete state.orcamentos[cat];
+      else if (!isNaN(v) && v > 0) state.orcamentos[cat] = Math.round(v * 100) / 100;
+      await saveAll();
+      render();
+    };
+  });
+}
+
+function renderMetas(content) {
+  content.innerHTML = `
+    <section style="margin-top:6px">
+      <h2>Metas de economia</h2>
+      ${state.metas.length === 0 ? `<div class="empty-tab">Nenhuma meta criada ainda.</div>` : state.metas.map(m => {
+        const pct = m.alvo > 0 ? Math.min(100, (m.atual / m.alvo) * 100) : 0;
+        return `
+        <div class="goal-card">
+          <div class="goal-top"><span class="nome">${m.nome}</span><span class="pct">${pct.toFixed(0)}%</span></div>
+          <div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div>
+          <div class="goal-amounts"><span>${fmt(m.atual)}</span><span>${fmt(m.alvo)}</span></div>
+          <div class="goal-add">
+            <input type="text" inputmode="decimal" placeholder="valor a adicionar" id="add-${m.id}">
+            <button type="button" class="btn" data-add="${m.id}">Adicionar</button>
+          </div>
+          <button type="button" class="goal-del" data-del="${m.id}">Excluir meta</button>
+        </div>`;
+      }).join('')}
+    </section>
+
+    <section>
+      <h2>Nova meta</h2>
+      <div class="card">
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Nome da meta</span>
+            <input type="text" id="mt-nome" placeholder="Ex: reserva de emergência">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <span class="field-label">Valor alvo</span>
+            <input type="text" id="mt-alvo" placeholder="0,00" inputmode="decimal">
+          </div>
+        </div>
+        <p class="err" id="mt-err"></p>
+        <button type="button" id="mt-add" class="btn">Criar meta</button>
+      </div>
+    </section>
+  `;
+
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.add;
+      const input = document.getElementById('add-' + id);
+      const v = parseValor(input.value);
+      if (isNaN(v) || v <= 0) return;
+      const meta = state.metas.find(m => m.id === id);
+      if (meta) meta.atual = Math.round((meta.atual + v) * 100) / 100;
+      await saveAll();
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-del]').forEach(btn => {
+    btn.onclick = async () => {
+      state.metas = state.metas.filter(m => m.id !== btn.dataset.del);
+      await saveAll();
+      render();
+    };
+  });
+
+  document.getElementById('mt-add').onclick = async () => {
+    const nomeInput = document.getElementById('mt-nome');
+    const alvoInput = document.getElementById('mt-alvo');
+    const errEl = document.getElementById('mt-err');
+    const alvo = parseValor(alvoInput.value);
+    if (!nomeInput.value.trim()) {
+      errEl.textContent = 'Dê um nome para a meta.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!alvo || isNaN(alvo) || alvo <= 0) {
+      errEl.textContent = 'Informe um valor alvo válido.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+    state.metas.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      nome: nomeInput.value.trim(),
+      alvo: Math.round(alvo * 100) / 100,
+      atual: 0
+    });
+    await saveAll();
+    render();
+  };
+}
+
+loadAll();
+</script>
+</body>
+</html>
